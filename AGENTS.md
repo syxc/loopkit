@@ -4,24 +4,23 @@ Decisions follow explicit acceptance. Implement one small, verifiable slice per 
 
 ## Plan
 
-- Read the approved `loopkit.task.json`, `PROMPT.md` if present, `.loopkit/state.json` and referenced attempt evidence, then `git log --oneline -20`.
+- Read the approved `loopkit.task.json`, `docs/loopkit.md`, saved state/evidence and Git status before modifying the candidate.
 - The task file defines the goal, executable acceptance, CLI adapters and finite limits. Commit the approved contract and project checks before starting the runner. Do not edit them to fit an implementation.
-- Prose plans, feature-list booleans and Git commit messages are context, not proof of completion.
-- Use optional `skills/*/SKILL.md` (source) or `.claude/skills/*/SKILL.md` (installed) when they help this task. No mandatory all-skill bootstrap.
+- Prose plans and Git commit messages are context, not proof of completion.
 
 ## Act
 
 - Keep the task small. Preserve existing work. The runner refuses a dirty first start.
 - Do not commit, reset, stash, clean, push, move HEAD, edit the contract or write `.loopkit` runtime files during a run. The runner owns its state and evidence.
 - Do not weaken checks or delete tests to obtain a pass. Stop for a contract correction if the check is wrong.
-- If a decision or permission is missing, write `BLOCKED.md` with the cause and required human action. Stop. External notifications are optional and require authorization.
+- If a decision or permission is missing, write `BLOCKED.md` with the cause and required human action. Stop.
 - Do not install tools, use paid APIs or access private services without task authorization. The runner does not grant these permissions.
 
 ## Verify
 
 - `./run.sh` runs the configured executor, deterministic project checks and a separate fresh reviewer process.
 - The reviewer provides static evidence against the exact candidate; it is not a replacement for executable acceptance or required project CI.
-- CLI exit success, a model's done text, `/verify` prose and stale saved status cannot mark a task verified. The runner validates the JSON verdict and candidate binding.
+- CLI exit success, a model's done text and stale saved status cannot mark a task verified. The runner validates the JSON verdict and candidate binding.
 - `./run.sh --resume --verify-only` checks an existing run's candidate without executing a repair. Changed candidates or contracts invalidate saved evidence. Review before an authorized human commit.
 - Never claim completion after a failed check or review. Preserve evidence and report the failure.
 
@@ -34,6 +33,6 @@ Decisions follow explicit acceptance. Implement one small, verifiable slice per 
 
 ## Boundary and maintenance
 
-This is a local workflow gate for cooperating tools and one owner, not a security sandbox or production scheduler. Adapters, checks, Git configuration, local files and the operator are trusted. Review independence means a new process without an executor session; model quality and read-only behavior are not enforced by OS isolation. See `docs/portability.md`.
+This is a local workflow gate for cooperating tools and one owner, not a security sandbox or production scheduler. Adapters, checks, Git configuration, local files and the operator are trusted. Review independence means a new process without an executor session; model quality and read-only behavior are not enforced by OS isolation. See `docs/loopkit.md`.
 
-After a model/tool change, and at least once per month of active use, apply `skills/harness-stripping/SKILL.md` (or its installed path). Use fixed task revisions and paired baseline/one-component-removed runs. Keep acceptance, failure gates and authorization boundaries intact. No performance gains are claimed without saved measurements.
+After a model/tool change, and at least once per month of active use, follow the periodic ablation protocol in `docs/loopkit.md`. Use fixed task revisions and paired baseline/one-component-removed runs. Keep acceptance, failure gates and authorization boundaries intact. No performance gains are claimed without saved measurements.

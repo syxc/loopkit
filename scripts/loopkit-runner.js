@@ -7,7 +7,7 @@ const { spawn, spawnSync } = require('node:child_process');
 
 const args = process.argv.slice(2);
 if (args.includes('--help')) {
-  console.log('Usage: ./run.sh [--task loopkit.task.json] [--resume] [--verify-only]\nNo commits or cleanup. See docs/portability.md.');
+  console.log('Usage: ./run.sh [--task loopkit.task.json] [--resume] [--verify-only]\nNo commits or cleanup. See docs/loopkit.md.');
   process.exit(0);
 }
 let taskPath = 'loopkit.task.json';

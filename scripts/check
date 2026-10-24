@@ -1,16 +1,8 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/sh
+set -eu
 cd "$(dirname "$0")/.."
-bash scripts/validate-skills
-for file in install.sh run.sh bin/loopkit-add scripts/committer scripts/validate-skills scripts/sync-skills .claude/hooks/session-start .claude/hooks/pre-compact; do
-  bash -n "$file"
-done
-for file in scripts/loopkit-runner.js bin/loopkit.js examples/demo-cli.js tests/*.test.js tests/fixtures/agent.js; do
+sh -n run.sh
+sh -n scripts/check
+for file in scripts/install.js scripts/loopkit-runner.js examples/demo-cli.js tests/*.test.js tests/fixtures/agent.js; do
   node --check "$file"
 done
-# Validate a real installation in an isolated HOME, never inspect the user's HOME.
-TEST_HOME=$(mktemp -d)
-trap 'rm -rf "$TEST_HOME"' EXIT
-HOME="$TEST_HOME" bash scripts/sync-skills --check
-HOME="$TEST_HOME" bash scripts/sync-skills --to-user
-HOME="$TEST_HOME" bash scripts/sync-skills --check

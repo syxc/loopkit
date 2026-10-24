@@ -46,7 +46,7 @@ Reviewer prompt includes `task`, `candidate`, `diff_path`, executable `checks` a
 
 Use a fresh process without a session/resume flag or shared conversation history. New process creation is enforced; independence of an adapter's remote session and tool restrictions are operator responsibilities. Prefer a separate reviewer tool profile. The same model may be used in a fresh context, but a second model does not guarantee review quality. CLI default models can drift, so pin model/tool versions in adapter argv or configuration.
 
-For a CLI that accepts a final prompt and emits only final text, an argv can have the form `["cli", "print-mode-flag", "model-flag", "pinned-model-id"]`. This is a protocol illustration, not a claim about a particular CLI version. Use a small local adapter to unwrap a CLI's documented transport envelope or read a result file. Validate the transport exit and result; do not extract an arbitrary JSON-looking substring. Do not reuse a CLI session for review. Legacy `LOOPKIT_CLI` and `CLAUDE_*_MODEL` environment variables are not read; put the exact executable, flags and model in the approved task.
+Put the exact executable, flags and model in the approved argv. If a CLI emits a transport envelope or result file, use a local adapter to return the documented verdict object. Validate both transport exit and result; do not extract an arbitrary JSON-looking substring. Do not reuse a CLI session for review.
 
 The offline `examples/demo-cli.js` shows both sides of this protocol without calling a model. It is a fixed test fixture, not a code-quality reviewer.
 
@@ -74,6 +74,34 @@ Caps cannot be raised by editing an active contract. When exhausted, preserve th
 
 ## Installation
 
-From a reviewed clone, run `node /path/to/loopkit/bin/loopkit.js init` in the target. `--dry-run` lists actions, `--force` explicitly overwrites. Existing files otherwise remain; inspect retained files for old commands or conflicting rules. The download `install.sh` requires Node/curl/tar and delegates to this same copy list. `LOOPKIT_REF` accepts a Git ref, including a commit; pin one reviewed by your team. `DEST` must already exist. `BACKUP=1` snapshots `.claude` only; it does not back up every overwritten file.
+From the target project directory, run `node /path/to/loopkit/scripts/install.js` from a reviewed source copy. `--dry-run` previews writes without changing files. The installer never overwrites existing files and refuses symlink targets or parents. Inspect kept files for conflicting instructions or old runtime versions; a mixed installation is not validated.
 
-Both entries include `AGENTS.md`, required runtime, contract template, offline examples and checklist references. The source `.mcp.json` is optional and not installed. A Claude plugin or a skills-only install supplies instructions, not the runner or a verification gate. The runnable offline quickstart is in the root README; it creates a separate demo project and makes only a fixture commit.
+The installer copies `AGENTS.md`, `LICENSE`, `run.sh`, `scripts/loopkit-runner.js`, `template/loopkit.task.json`, this guide and the two offline example files. No package installation, network call or tool integration is needed. For the offline demo, copy `examples/task.demo.json` to `loopkit.task.json`, approve and commit the installed files in a new Git project, then run `./run.sh`. Its reviewer is a fixed protocol fixture, not a code-quality reviewer. For real work, configure the template's acceptance and adapters before approving the task.
+
+## Periodic ablation
+
+After a model/tool change, and monthly during active use, compare the baseline with exactly one optional component removed. Examples are a project prompt paragraph or adapter tool wrapper. This is a manual protocol, not a benchmark service. Paid experiments require explicit authorization. Do not remove acceptance, JSON validation, candidate binding, blocked-state gates, limits, permissions or other safety controls.
+
+### Freeze the manifest
+
+Before any run, save:
+
+- A hypothesis, the single removed component, baseline runner SHA and variant patch. No unrelated variant changes.
+- Fixed task IDs, repository revisions, task-file hashes and exact acceptance commands. Include a happy path, an error path and a previous failure when available. Do not select tasks after seeing results.
+- Exact model IDs, CLI/adapter/tool versions, OS, dependency lockfiles and permission profiles. State any provider version that cannot be pinned.
+- Repetition count, alternating baseline-first/variant-first order, acceptance and cost/time decision rules. Three fixed tasks with two repetitions each is a small procedure example, not statistical evidence.
+- Equal iteration, time and spending budgets, plus the accounting source for usage/cost. The runner has no monetary quota gate; use a provider limit or a human-approved budget and stop at it.
+
+### Run each pair
+
+1. Prepare two new local worktrees at the fixed task revision. Use identical task files, checks and adapters; only the variant gets the removal patch. Have the operator approve and commit each setup, record both starting SHAs and confirm clean trees. This prerequisite does not grant an agent automatic commit permission.
+2. Run `./run.sh --task <fixed-task-path>` in each arm, in the frozen order, with fresh state and conversations. Record wall time from launch. Use non-production copies without private services; do not share mutable services between arms.
+3. Retain the exit, `.loopkit` evidence and blockers, including failed or timed-out runs. Run the same unchanged external acceptance command against each final candidate with the same timeout. Model done text does not replace this result.
+4. Record task/revision, repetition, arm, component/runner/model/tool versions, exit, acceptance, review, iterations, wall seconds, input/output tokens, actual cost and source, human intervention and evidence path in plain CSV or JSON. Missing cost is `unknown`, not zero.
+5. Do not tune prompts, checks or models mid-experiment. If a correction is necessary, retain the discarded evidence with a reason and restart both affected arms.
+
+### Decide from the saved pairs
+
+Compare acceptance, regressions, cost and time within each task/repetition, then report every pair and all failures. Apply the predeclared rule, such as no acceptance regression and no budget increase before retaining a simpler variant. Small samples can be inconclusive; do not claim statistical or general performance gains they cannot support.
+
+Save the manifest, patch, result table and decision together. Change a component only through normal review and authorization, never by automatic commit. The next ablation starts from the newly approved baseline and again removes only one component.

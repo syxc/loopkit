@@ -1,39 +1,22 @@
 {
-  "name": "claude-loopkit",
+  "name": "loopkit",
   "version": "0.1.1",
-  "description": "Acceptance-gated local agent runner with durable evidence and optional coding skills.",
+  "private": true,
+  "license": "MIT",
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "check": "bash scripts/check"
-  },
-  "keywords": [
-    "claude",
-    "claude-code",
-    "anthropic",
-    "agent",
-    "skills",
-    "harness",
-    "cursor",
-    "codex",
-    "gemini-cli",
-    "ai",
-    "llm"
-  ],
-  "homepage": "https://github.com/syxc/loopkit#readme",
-  "bugs": {
-    "url": "https://github.com/syxc/loopkit/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/syxc/loopkit.git"
-  },
-  "license": "MIT",
-  "author": "Archive228",
-  "bin": {
-    "claude-loopkit": "bin/loopkit.js",
-    "loopkit-add": "./bin/loopkit-add"
+    "check": "sh scripts/check"
   },
   "engines": {
     "node": ">=18"
-  }
+  },
+  "files": [
+    "AGENTS.md",
+    "run.sh",
+    "scripts/install.js",
+    "scripts/loopkit-runner.js",
+    "template/loopkit.task.json",
+    "docs/loopkit.md",
+    "examples"
+  ]
 }

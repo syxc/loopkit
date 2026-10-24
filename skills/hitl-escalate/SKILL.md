@@ -20,7 +20,7 @@ If none of the above hold, do not escalate. Guessing is bad; escalating on a sol
 
 ## Primary action — call the human via the configured channel
 
-Read `LOOPKIT_HITL_CHANNEL`. Supported values:
+Only contact an external channel when the user has authorized that destination and data scope. The runner does not invoke these integrations. If authorized, read `LOOPKIT_HITL_CHANNEL`. Supported values:
 
 | Value | Shape |
 |---|---|
@@ -43,7 +43,7 @@ Non-2xx from the channel is a soft failure. Log it, then fall through to the fal
 
 ## Fallback — write BLOCKED.md and exit
 
-Whether the primary succeeds or fails, always write `./BLOCKED.md` at the repo root with exactly four sections:
+Whether the primary succeeds or fails, write `./BLOCKED.md` at the repo root if absent. Preserve an existing blocker. Suggested sections:
 
 ```markdown
 # Blocked
@@ -67,7 +67,7 @@ Then `exit 2`. The loop runner (`run.sh`) checks for `BLOCKED.md` at the head of
 
 ## Human unblocks
 
-The human reads `BLOCKED.md`, edits `PROMPT.md` / drops the credential / approves the destructive step, then `rm BLOCKED.md` and restarts `run.sh`. The deleted `BLOCKED.md` is the unblock signal.
+The human reads `BLOCKED.md`, resolves the cause, explicitly removes the marker, then runs `./run.sh --resume` with the same task path. Original counters and deadline persist. An active `loopkit.task.json` cannot be edited to raise limits or change acceptance; a contract correction requires a new approved run after the human preserves the candidate and archives prior state.
 
 ## Anti-patterns — do not do these
 

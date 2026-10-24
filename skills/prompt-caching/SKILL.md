@@ -6,6 +6,8 @@ when_to_use: long session, repeated large context, cost climbing, system prompt 
 
 # Prompt Caching
 
+> Historical provider-specific guidance. The token thresholds, prices, TTLs, breakpoint limits and savings estimates below are unverified in this fork, not universal guarantees. Check your pinned provider/model documentation and actual usage before use. The local runner adds no prompt-cache implementation.
+
 Every turn of a Plan→Act→Verify loop resends the same system prompt, the same tool definitions, and (usually) the same reference docs. Without cache breakpoints you pay full input price on all of it, every turn. With them, cached reads cost ~10% of the write.
 
 ## Where to put breakpoints

@@ -6,15 +6,15 @@ when_to_use: extracting structured data, agent-to-agent handoff, verifier verdic
 
 # Structured Output
 
-Prompted JSON — "reply as JSON" in the system prompt — fails on ~2-8% of calls in the wild: stray prose before the object, trailing commas, unescaped quotes, code fences. That failure rate is fine for a demo and fatal for a loop that runs a thousand times.
+Prompted JSON can contain prose, trailing commas, unescaped quotes or code fences. Validate the complete response and required field types. This fork claims no measured failure rate.
 
 ## The hierarchy — use the strongest that fits
 
-1. **Tool use with schema** (best) — declare a tool with a JSON Schema for its input. Force the model to call that tool. The API validates the arguments against the schema before you see them. Malformed JSON never leaves the model. Use this whenever the downstream is a real parser.
+1. **Tool use with schema** (best) — declare a tool with a JSON Schema for its input. Force the model to call that tool. Check the provider's documented guarantees and still validate the received arguments locally. Use this whenever the downstream is a real parser.
 
 2. **JSON mode / `response_format`** (good) — where supported. Guarantees a valid JSON object at the top level; does not guarantee schema conformance. Cheap upgrade over prompted-JSON.
 
-3. **Prompted JSON with strict rules** (fallback) — for models/tiers without tool use. Say "output ONLY the JSON object, no code fences, no prose", give an example, and validate on receive. Assume ~5% failure and handle it.
+3. **Prompted JSON with strict rules** (fallback) — for models/tiers without tool use. Say "output ONLY the JSON object, no code fences, no prose", give an example, and validate on receive. Handle malformed output as failure; do not infer a pass.
 
 ## The validate-and-retry pattern
 
@@ -46,9 +46,9 @@ Otherwise use tool_use.
 - **Regex to extract JSON from a code fence.** You're one prompt tweak away from breakage. Use tool_use.
 - **`json.loads` with a bare `try/except: pass`.** Silent failure — you'll be debugging a downstream nil for hours.
 - **Schema is a wall of `oneOf`/`anyOf`.** Split into multiple tools and let the model choose which to call.
-- **"Just add 'ONLY JSON' to the system prompt" in a hot loop.** Works 95% of the time. That's the problem.
+- **Trusting 'ONLY JSON' without validation.** Prompt wording is not a parser.
 - **Different structured output on retry with same input.** Set temperature to 0 for extraction tasks.
 
 ## Loopkit-adjacent
 
-Loopkit's `adversarial-verify` output is `{"passes": bool, "failures": [...]}` — that is exactly the shape this skill formalizes. When you compose skills, keep every machine-consumed hop tool_use'd.
+The local runner requires `task_id`, exact `candidate_id`, boolean `passes` and a consistent `failures` array from its fresh reviewer. It fails closed on invalid output and does not retry parsing by extracting a substring. See `docs/portability.md`. A CLI transport envelope must be handled by an explicit adapter, not treated as the verdict.

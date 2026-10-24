@@ -22,9 +22,9 @@ Inspired by the planner/generator/evaluator split in Prithvi's March 2026 post o
 
 1. **Name the one deliverable.** One feature, one sentence, user-observable. If you can't say it in a sentence, the sprint is too big — split it, contract the first slice.
 2. **Write the acceptance predicates.** 3-7 bullets, each one a check that either passes or fails. No "clean code", no "good UX" — write predicates a script or a browser click can decide.
-3. **Name the runtime path.** How is this exercised end-to-end? Which URL, which CLI invocation, which button click? The evaluator will drive this exact path — no substitutes.
+3. **Name the runtime path.** How is this exercised end-to-end? Which URL, CLI invocation or button click? Put the executable check in acceptance. The independent reviewer is static; it examines evidence and connected code rather than replacing runtime tests.
 4. **List the out-of-scope items.** Two or three things the generator will be tempted to also fix. Written down = evaluator will reject them as scope creep, generator has an anchor when tempted.
-5. **Sign it in the shift notes.** Paste the contract into `claude-progress.txt` (or equivalent) under a `## Sprint contract` header, with the sprint start timestamp. Both personas reference this exact text for the rest of the sprint.
+5. **Save the approved machine contract.** Use `loopkit.task.json` with executable acceptance, adapter argv and finite limits. The user reviews and commits it before starting the runner. Shift notes can explain scope but do not govern completion.
 6. **Then, and only then, write code.**
 
 ## Contract shape

@@ -12,7 +12,7 @@ const HELP = args.includes('-h') || args.includes('--help');
 const VERSION = args.includes('--version');
 
 function help() {
-  console.log(`claude-loopkit — drop-in .claude/ harness + 41 skills
+  console.log(`claude-loopkit — local acceptance-gated runner and optional skills
 
 Usage:
   npx claude-loopkit init [--force] [--dry-run]
@@ -22,15 +22,17 @@ init copies into the current directory:
   .claude/CLAUDE.md
   .claude/settings.json
   .claude/agents/verifier.md
-  .claude/skills/<41 skill dirs>
-  .mcp.json
-  MEMORY.md
-  run.sh
+  .claude/skills/<skill directories>
+  AGENTS.md, MEMORY.md, run.sh
+  scripts/loopkit-runner.js
+  template/loopkit.task.json
+  examples/ (offline demo)
+  docs/portability.md, docs/checklists/
 
 Existing files are kept by default. Pass --force to overwrite,
 or --dry-run to see what would change without writing.
 
-Repo: https://github.com/Archive228/loopkit`);
+Repo: https://github.com/syxc/loopkit`);
 }
 
 if (VERSION) {
@@ -60,7 +62,12 @@ const CWD = process.cwd();
 const COPY = [
   ['.claude', '.claude'],
   ['skills', '.claude/skills'],
-  ['.mcp.json', '.mcp.json'],
+  ['AGENTS.md', 'AGENTS.md'],
+  ['scripts/loopkit-runner.js', 'scripts/loopkit-runner.js'],
+  ['template/loopkit.task.json', 'template/loopkit.task.json'],
+  ['examples', 'examples'],
+  ['docs/portability.md', 'docs/portability.md'],
+  ['docs/checklists', 'docs/checklists'],
   ['MEMORY.md', 'MEMORY.md'],
   ['run.sh', 'run.sh'],
 ];
@@ -70,6 +77,11 @@ let skipped = 0;
 const plan = [];
 
 function walk(srcAbs, dstAbs) {
+  for (let target = dstAbs; target !== CWD; target = path.dirname(target)) {
+    if (fs.lstatSync(target, { throwIfNoEntry: false })?.isSymbolicLink()) {
+      throw new Error(`Refusing symlink install target: ${target}`);
+    }
+  }
   const st = fs.statSync(srcAbs);
   if (st.isDirectory()) {
     if (!DRY) fs.mkdirSync(dstAbs, { recursive: true });
@@ -95,7 +107,7 @@ function walk(srcAbs, dstAbs) {
 
 for (const [from, to] of COPY) {
   const src = path.join(PKG_ROOT, from);
-  if (!fs.existsSync(src)) continue;
+  if (!fs.existsSync(src)) throw new Error(`Required install artifact missing: ${src}`);
   walk(src, path.join(CWD, to));
 }
 
@@ -113,5 +125,6 @@ console.log(`claude-loopkit: init complete`);
 console.log(`  ${wrote} files written, ${skipped} skipped${skipped ? ' (use --force to overwrite)' : ''}`);
 console.log(`  installed into ${CWD}`);
 console.log();
-console.log(`Next: open Claude Code in this directory. Skills load on relevant triggers.`);
-console.log(`Docs and full 41-skill list: https://github.com/Archive228/loopkit`);
+console.log(`Next: read docs/portability.md. Review kept files before use; mixed versions are not validated.`);
+console.log(`Create and commit a task contract before ./run.sh. No model calls occur during installation.`);
+console.log(`Optional MCP wiring is not installed. Repo: https://github.com/syxc/loopkit`);

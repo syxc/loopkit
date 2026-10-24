@@ -17,8 +17,8 @@ The last beat of Finn Loop. It fires `/polish` (loopkit upgrade #3 — reuse / s
    - If `/polish` is not installed in this project (base loopkit only, no upgrade #3), fall back to reading `skills/simplify/SKILL.md` and applying its checklist manually against `git diff HEAD`.
 3. **Verify.** Invoke `/verify` (base loopkit `.claude/commands/verify.md`). Adversarial pass against the polished diff. Non-zero from `/verify` blocks the merge signal.
    - If `/verify` fails, do NOT post the rocket. Print the failure list from `/verify` and stop.
-4. **Commit the polish.** If `/polish` made changes, commit them via `scripts/committer "chore: polish pass" <files>`.
-5. **Signal merge.** Post the rocket emoji to the configured channel:
+4. **Preserve the candidate.** Leave polish changes uncommitted. If they change a saved verified candidate, the user must explicitly arrange fresh verification for the new bytes. Commit only with separate user authorization.
+5. **Signal merge only with authorization.** A webhook being set is not permission to send project data. After successful exact-candidate verification and explicit destination/data-scope authorization:
    - If `LOOPKIT_SLACK_WEBHOOK` is set, run `presets/finn-loop/integrations/slack-notify.sh` (or `.claude/integrations/slack-notify.sh` in installed layout).
    - If no channel is configured, print the rocket to stdout and note that no channel is wired up:
      > 🚀 Ready to merge. (No `LOOPKIT_SLACK_WEBHOOK` configured — set it to auto-post.)

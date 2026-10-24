@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "task_id": "replace-with-one-slice",
+  "goal": "Replace this goal and acceptance command with one user-observable change before running.",
+  "acceptance": [
+    {
+      "id": "project-check",
+      "description": "Replace this failing placeholder with a deterministic assertion of the goal, including the runtime path where needed.",
+      "argv": ["node", "-e", "console.error('Configure executable acceptance first'); process.exit(1)"]
+    }
+  ],
+  "executor": ["configure-an-executor-adapter"],
+  "reviewer": ["configure-a-fresh-reviewer-adapter"],
+  "limits": {
+    "max_iterations": 3,
+    "command_timeout_seconds": 120,
+    "run_timeout_seconds": 900
+  }
+}

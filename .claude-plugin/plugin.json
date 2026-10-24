@@ -1,13 +1,13 @@
 {
   "name": "loopkit",
-  "description": "33 battle-tested skills + a minimal harness (CLAUDE.md, verifier subagent, format-on-write hook, MEMORY index, loop runner) for Claude Code, Cursor, Codex, and Gemini CLI.",
+  "description": "Optional coding skills and Claude instructions. Install the local runner separately for executable acceptance gates.",
   "version": "0.2.0",
   "author": {
     "name": "Archive228",
     "url": "https://github.com/Archive228"
   },
-  "homepage": "https://github.com/Archive228/loopkit",
-  "repository": "https://github.com/Archive228/loopkit",
+  "homepage": "https://github.com/syxc/loopkit",
+  "repository": "https://github.com/syxc/loopkit",
   "license": "MIT",
   "keywords": [
     "skills",

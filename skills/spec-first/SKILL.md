@@ -4,10 +4,9 @@ description: Write the goal spec on disk before the agent acts, so it can't drif
 when_to_use: a task with more than 2 steps, a long-running job, "build X", agent drifting
 ---
 # Spec First
-Without an external contract, the agent drifts after ~3 iterations — and the failure looks like progress (code written, tests pass, wrong goal solved).
-Write `PROMPT.md` BEFORE acting:
+Write the approved `loopkit.task.json` BEFORE starting the local runner, using `template/loopkit.task.json`. It must include executable acceptance, explicit adapters and finite limits. Supporting `PROMPT.md` can state:
 - **Goal** — one sentence.
 - **Done when** — concrete, checkable conditions. "Test suite green: <cmd>".
 - **Never touch** — files/areas off-limits.
 - **Stop if** — more than N files outside scope change; a passing test starts failing.
-The agent re-reads this file every iteration. State (what's done) goes in a separate `IMPLEMENTATION_PLAN.md` it updates in place. If you can't write "done when" concretely, the task isn't ready — clarify before coding.
+The user reviews and commits the contract and checks before running. Do not edit an active contract to fit the candidate. `.loopkit/state.json` and exact-candidate evidence belong to the runner; a prose plan is context only. If you cannot write executable acceptance, the task is not ready. Clarify before coding.

@@ -6,7 +6,7 @@ when_to_use: standing up an evaluator/critic agent for a multi-agent harness, no
 
 # Evaluator Calibration
 
-An evaluator agent that reads the generator's reasoning drifts lenient. The generator explains why the code is good; the evaluator, priming on that prose, starts nodding along. By sprint 8 the "skeptical critic" is a rubber stamp. Prithvi flagged this in the March 2026 planner/generator/evaluator writeup — evaluator leniency is the failure mode of the three-agent harness.
+A reviewer that reads the generator's reasoning can become lenient. Keep the artifact and approved contract separate from the generator's self-assessment. This fork has no reproduced measurement of evaluator drift or a fixed interval at which it occurs.
 
 The fix is not "tell the evaluator to be stricter." That works for one iteration. The fix is **anchoring the rubric with concrete pass/fail examples the evaluator re-reads every invocation**, and **re-prompting from scratch on a fixed cadence** so drift can't accumulate.
 
@@ -27,9 +27,9 @@ The fix is not "tell the evaluator to be stricter." That works for one iteration
 
 4. **Require the evaluator to quote the artifact in every verdict.** "Fails criterion 3 because <quoted line>" — not "fails criterion 3." Quoting forces grounding and makes the verdict auditable.
 
-5. **Re-prompt from scratch every N iterations.** Empirically N=5 works. Kill the evaluator's context, reload the system prompt + rubric + examples fresh. Do not compact; compaction preserves the drift.
+5. **Use fresh context for every runner review.** Reload the contract and any approved rubric examples. Do not share an executor session or reuse previous verdict text as authority. There is no reproduced optimal reset interval in this fork.
 
-6. **Log verdict distributions.** Track pass rate per criterion per sprint. A criterion that goes from 40% pass to 90% pass without a spec change is drift, not improvement.
+6. **Log verdict distributions.** Track pass rate per criterion per sprint. A pass-rate change alone does not establish improvement or drift; inspect the artifacts and fixed-task acceptance evidence.
 
 7. **Spot-check with a held-out fail.** Every ~10 sprints, feed the evaluator an artifact from your example set that you know fails. If it passes, the calibration has decayed — regenerate the example set from recent real runs.
 

@@ -1,71 +1,39 @@
-# AGENTS.md — loopkit loop contract
+# loopkit local run contract
 
-This repo runs long-lived agent sessions. Every session shares one contract:
-**Plan → Act → Verify**, single-feature per session, clean state at the end.
+Decisions follow explicit acceptance. Implement one small, verifiable slice per task.
 
-This file is the cross-agent voice (Claude Code, Cursor, Codex CLI, Gemini CLI, Amp).
-Claude-specific extras live in `.claude/CLAUDE.md`, which imports this file via `@../AGENTS.md`.
+## Plan
 
-## The three-step loop
+- Read the approved `loopkit.task.json`, `PROMPT.md` if present, `.loopkit/state.json` and referenced attempt evidence, then `git log --oneline -20`.
+- The task file defines the goal, executable acceptance, CLI adapters and finite limits. Commit the approved contract and project checks before starting the runner. Do not edit them to fit an implementation.
+- Prose plans, feature-list booleans and Git commit messages are context, not proof of completion.
+- Use optional `skills/*/SKILL.md` (source) or `.claude/skills/*/SKILL.md` (installed) when they help this task. No mandatory all-skill bootstrap.
 
-Every session, in order:
+## Act
 
-1. **Plan.** Read `PROMPT.md` (goal), `IMPLEMENTATION_PLAN.md` (state), and `git log --oneline -20` (history). If the last session claimed a feature done, smoke-test it before picking new work.
-2. **Act.** Implement exactly one feature. Not two. Not "one and a small one".
-3. **Verify.** Run `/verify` (adversarial pass against the diff) BEFORE claiming done or committing. Non-zero from `/verify` blocks the commit.
+- Keep the task small. Preserve existing work. The runner refuses a dirty first start.
+- Do not commit, reset, stash, clean, push, move HEAD, edit the contract or write `.loopkit` runtime files during a run. The runner owns its state and evidence.
+- Do not weaken checks or delete tests to obtain a pass. Stop for a contract correction if the check is wrong.
+- If a decision or permission is missing, write `BLOCKED.md` with the cause and required human action. Stop. External notifications are optional and require authorization.
+- Do not install tools, use paid APIs or access private services without task authorization. The runner does not grant these permissions.
 
-If `IMPLEMENTATION_PLAN.md` and the git log disagree, trust the git log. Git is append-only; the plan is rewritten each turn.
+## Verify
 
-## Single-feature rule
+- `./run.sh` runs the configured executor, deterministic project checks and a separate fresh reviewer process.
+- The reviewer provides static evidence against the exact candidate; it is not a replacement for executable acceptance or required project CI.
+- CLI exit success, a model's done text, `/verify` prose and stale saved status cannot mark a task verified. The runner validates the JSON verdict and candidate binding.
+- `./run.sh --resume --verify-only` checks an existing run's candidate without executing a repair. Changed candidates or contracts invalidate saved evidence. Review before an authorized human commit.
+- Never claim completion after a failed check or review. Preserve evidence and report the failure.
 
-One feature per session. Sessions that pack multiple features ship them all half-done — we have measured this. The next session takes the next feature. There is no reward for finishing more in one session; there is a real cost to leaving things half-done.
+## Resume and delivery
 
-## Clean-state contract (end of every session)
+- Inspect `BLOCKED.md` and `.loopkit/state.json`. Resolve the cause, explicitly remove the marker, then use `./run.sh --resume`. Counters and the original wall-clock deadline persist.
+- A dead process can leave `.loopkit/owner.lock`. Confirm the owner is dead before removing that lock manually. Do not start two owners in one worktree.
+- The runner leaves successful changes uncommitted. Commit/push only on explicit user instruction, after required checks and review. Stop any task-started services.
+- Do not delete candidate work to obtain a clean tree. The human decides how to preserve it and when to archive old run evidence.
 
-- All code committed to git. Prefer `scripts/committer "<msg>" <files>` — it refuses `.` and empty messages.
-- No uncommitted changes in the working tree.
-- `IMPLEMENTATION_PLAN.md` updated: what was done, what is next, known open issues.
-- Dev server killed (`./stop.sh` if the project has one).
-- A feature is only "done" after end-to-end verification (`/verify`), not after unit tests alone.
+## Boundary and maintenance
 
-## Skills vs rules
+This is a local workflow gate for cooperating tools and one owner, not a security sandbox or production scheduler. Adapters, checks, Git configuration, local files and the operator are trusted. Review independence means a new process without an executor session; model quality and read-only behavior are not enforced by OS isolation. See `docs/portability.md`.
 
-- **Skills** (`skills/*/SKILL.md`) — invoked on demand by trigger phrases in their `description`. Read the skill's SKILL.md before acting on a matching task.
-- **Rules** (`.claude/rules/*.md`) — auto-loaded when a file path matches. Silent guardrails, not opt-in.
-
-Full skill routing table: `skills/using-loopkit/SKILL.md` (repo layout) or `.claude/skills/using-loopkit/SKILL.md` (installed layout).
-
-## Slash-command entry points
-
-- `/spec` — write `PROMPT.md` before implementing. Refuses to run if `PROMPT.md` exists without `--force`.
-- `/verify` — adversarial pass against the current diff. Non-zero exit blocks completion claims.
-- `/loop` — describe or run the Plan → Act → Verify cycle.
-
-## Never
-
-- Weaken or delete a test to make red go green. If a test is wrong, fix the test in its own commit with justification.
-- Mark work done without running `/verify`.
-- Edit a merged migration. Migrations are additive-only.
-- Add a dependency without justifying it in the commit body.
-- Run `npm update`, `pip install -U`, or equivalents unless the feature is literally "upgrade dependencies".
-- Push to `main` from an agent session. Humans push.
-
-## Verify before you commit
-
-The maker's-head reviewer always agrees with itself. `/verify` is a separate, hostile pass. Every code change goes through it. See `skills/adversarial-verify/SKILL.md` for the 11 shortcuts that fake "done".
-
-## When user instructions and this file disagree
-
-User instructions win. This file is the default when the user has not said otherwise.
-
-## Escalation
-
-When stuck, the agent runs `hitl-escalate`. If no channel is configured, it writes `BLOCKED.md` and the loop exits with code 2. Human unblocks, deletes `BLOCKED.md`, restarts `run.sh`.
-
-## Model routing
-
-`run.sh` reads `CLAUDE_EXECUTOR_MODEL` (per-turn workhorse call) and `CLAUDE_JUDGE_MODEL` (per-turn `/verify` call) as first-class knobs, plus `CLAUDE_PLANNER_MODEL` reserved for `/spec`. Unset = CLI default. See `skills/model-routing/SKILL.md` for the cheap-executor + frontier-judge shape.
-
-## Presets
-
-The `presets/` directory holds opinionated stacks — arrangements of the base skills for specific shipping cadences. Base loopkit stays a 49-skill floor that any preset can build on; the presets themselves are one arrangement of that floor, not replacements for it. `presets/finn-loop/` is the first one to ship: async, human-gated (`/spec` → ACK → `/build` → `/review` → rocket-emoji merge signal), with Linear-MCP and Slack-webhook hooks that are OFF by default. Future presets on the roadmap: `three-agent` (planner + generator + evaluator, per Prithvi's harness-design work) and `executor-judge` (do → judge → do → judge).
+After a model/tool change, and at least once per month of active use, apply `skills/harness-stripping/SKILL.md` (or its installed path). Use fixed task revisions and paired baseline/one-component-removed runs. Keep acceptance, failure gates and authorization boundaries intact. No performance gains are claimed without saved measurements.

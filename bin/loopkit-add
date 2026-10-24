@@ -1,66 +1,37 @@
-#!/usr/bin/env bash
-# loopkit-add — cherry-pick one skill from Archive228/loopkit into ./.claude/skills/
-# Usage: loopkit-add <skill-name> [--force] [-h|--help]
-set -euo pipefail
-
-REPO="Archive228/loopkit"
-REF="main"
-API="https://api.github.com/repos/${REPO}/contents/skills"
-RAW="https://raw.githubusercontent.com/${REPO}/${REF}/skills"
-
-usage() {
-  cat <<EOF
-loopkit-add — install one loopkit skill into ./.claude/skills/
-
-Usage:
-  loopkit-add <skill-name>        install a skill (skip if dir exists)
-  loopkit-add <skill-name> --force overwrite existing files
-  loopkit-add -h | --help         show this help
-
-Example:
-  loopkit-add adversarial-verify
-
-Browse skills: https://github.com/${REPO}/tree/${REF}/skills
-EOF
-}
-
+#!/bin/sh
+# Copy one optional skill from the installed source; no network or model calls.
+set -eu
+usage() { printf 'Usage: loopkit-add <skill-name> [--force]\n'; }
+SKILL=
 FORCE=0
-SKILL=""
 for arg in "$@"; do
   case "$arg" in
     -h|--help) usage; exit 0 ;;
-    --force)   FORCE=1 ;;
-    -*)        echo "unknown flag: $arg" >&2; usage; exit 2 ;;
-    *)         SKILL="$arg" ;;
+    --force) FORCE=1 ;;
+    -*) usage >&2; exit 2 ;;
+    *) [ -z "$SKILL" ] || { usage >&2; exit 2; }; SKILL=$arg ;;
   esac
 done
-
-[ -n "$SKILL" ] || { usage; exit 2; }
-command -v curl >/dev/null || { echo "curl required" >&2; exit 1; }
-
-DEST=".claude/skills/${SKILL}"
-if [ -d "$DEST" ] && [ "$FORCE" -ne 1 ]; then
-  echo "$DEST already exists — pass --force to overwrite" >&2
+case "$SKILL" in ''|*[!a-z0-9-]*) usage >&2; exit 2 ;; esac
+ROOT=$(node -e '
+  const fs = require("node:fs");
+  const path = require("node:path");
+  console.log(path.dirname(path.dirname(fs.realpathSync(process.argv[1]))));
+' "$0")
+SRC=$ROOT/skills/$SKILL
+DEST=.claude/skills/$SKILL
+[ -f "$SRC/SKILL.md" ] || { printf 'Unknown skill: %s\n' "$SKILL" >&2; exit 1; }
+for target in .claude .claude/skills "$DEST"; do
+  [ ! -L "$target" ] || { printf 'Refusing symlink target: %s\n' "$target" >&2; exit 1; }
+done
+if [ -e "$DEST" ] && [ "$FORCE" != 1 ]; then
+  printf '%s exists; --force explicitly overwrites\n' "$DEST" >&2
   exit 1
 fi
-
-listing="$(curl -fsSL -H 'Accept: application/vnd.github+json' "${API}/${SKILL}?ref=${REF}" 2>/dev/null || true)"
-if [ -z "$listing" ] || echo "$listing" | grep -q '"message": *"Not Found"'; then
-  echo "skill '${SKILL}' not found upstream at ${REPO}/skills/${SKILL}" >&2
+if [ -d "$DEST" ] && [ -n "$(find "$DEST" -type l -print)" ]; then
+  printf 'Refusing symlinks within %s\n' "$DEST" >&2
   exit 1
 fi
-
-paths="$(printf '%s\n' "$listing" | grep -oE '"path": *"[^"]+"' | sed 's/.*"path": *"//; s/"$//')"
-[ -n "$paths" ] || { echo "no files listed for ${SKILL}" >&2; exit 1; }
-
 mkdir -p "$DEST"
-n=0
-while IFS= read -r p; do
-  rel="${p#skills/${SKILL}/}"
-  out="${DEST}/${rel}"
-  mkdir -p "$(dirname "$out")"
-  curl -fsSL "${RAW}/${SKILL}/${rel}" -o "$out"
-  n=$((n+1))
-done <<< "$paths"
-
-echo "installed ${n} files into ${DEST}/"
+cp -R "$SRC/." "$DEST/"
+printf 'Installed %s\n' "$DEST"

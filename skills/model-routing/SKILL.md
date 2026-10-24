@@ -1,36 +1,12 @@
 ---
 name: model-routing
-description: Split the Plan/Act/Verify loop across three model tiers — frontier planner, cheap executor, frontier judge — via env vars read by run.sh.
-when_to_use: when a long unattended loop is being tuned for cost, or when you want a stronger judge than executor.
+description: Configure pinned executor and fresh reviewer CLI adapters in a local task contract; measure model tradeoffs rather than assuming a winning tier.
 ---
 
 # Model routing
 
-`run.sh` reads three optional env vars and threads them into each `claude` invocation as `--model`. All default to unset, in which case the CLI default model is used (behaviour unchanged from a bare run).
+Set `executor` and `reviewer` argv arrays in the approved `loopkit.task.json`. The runner appends one JSON prompt to each. It does not read legacy `LOOPKIT_CLI` or `CLAUDE_*_MODEL` variables, split shell strings, or launch a planner model implicitly. See `docs/portability.md` for the adapter protocol.
 
-## The three knobs
+Pin the CLI version and model ID in adapter configuration. Start the reviewer without a session/resume identifier or executor conversation. Review must remain separate even if both roles use the same model. Configure a read-only reviewer tool profile; the runner is not a sandbox.
 
-- `CLAUDE_PLANNER_MODEL` — reserved for `/spec` workflows that draft PROMPT.md up front. Not read by the current `run.sh` loop, but claimed here so future planner passes bind to it.
-- `CLAUDE_EXECUTOR_MODEL` — used on the "do the next step" call. This is the workhorse; it runs on every iteration. Pick something cheap and fast.
-- `CLAUDE_JUDGE_MODEL` — used on the `/verify` call. Runs once per iteration to adversarially check the executor's diff. Pick a frontier model — a weak judge is worse than no judge.
-
-## Recommended shape
-
-```
-planner  = frontier   (Opus-class, runs once at /spec time)
-executor = cheap-fast (Haiku-class, runs every turn)
-judge    = frontier   (Opus-class, runs every turn but on a small diff)
-```
-
-## Example
-
-```bash
-export CLAUDE_PLANNER_MODEL="claude-opus-4-7"
-export CLAUDE_EXECUTOR_MODEL="claude-haiku-4-7"
-export CLAUDE_JUDGE_MODEL="claude-opus-4-7"
-./run.sh
-```
-
-## The Elvis Executor+Judge finding
-
-A cheap executor paired with a frontier judge outperforms a frontier executor with no judge on long loops. The judge catches the executor's premature-victory claims that a mono-model run rationalises away when it runs out of context. Cost stays low because the judge only sees the diff, not the working history.
+Choose models based on saved task acceptance, quality, wall time and actual cost. A cheaper executor and stronger reviewer is an option to test, not a verified performance claim. Use `harness-stripping` for paired comparisons after model/tool changes. Do not run paid experiments without authorization.

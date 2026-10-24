@@ -8,9 +8,16 @@ on:
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node: [18, 22]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
 
       - name: Validate SKILL.md frontmatter
         run: bash ./scripts/validate-skills
@@ -30,5 +37,8 @@ jobs:
       - name: Syntax-check scripts/sync-skills
         run: bash -n ./scripts/sync-skills
 
-      - name: Verify sync-skills --check runs cleanly on a fresh clone
-        run: bash ./scripts/sync-skills --check || true
+      - name: Runtime and installer regression tests (no model calls)
+        run: npm test
+
+      - name: Runtime syntax and isolated installed-skill sync check
+        run: npm run check

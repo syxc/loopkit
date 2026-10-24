@@ -6,6 +6,8 @@ when_to_use: initializer agent building the master feature list at scaffold time
 
 # feature_list.json
 
+Optional planning ledger only. For the local runner, `loopkit.task.json` and fresh exact-candidate evidence govern verification; no ledger boolean bypasses acceptance or review.
+
 The ledger of every feature the product will eventually have. Fresh-context sessions read it to pick work; they flip exactly one boolean when done. JSON, not Markdown — the syntactic strictness is load-bearing. Prose gets edited freely; data gets edited carefully.
 
 Format per entry:
@@ -56,7 +58,7 @@ Categories: `functional`, `ux`, `data`, `infra`. Order the array in implementati
 - **Flipping multiple entries in one session** — the single-feature-per-session rule (see [[one-feature-per-session]]) exists because packed sessions ship everything half-done. One flip per session.
 - **Adding new entries mid-project without spec change** — if scope grew, note it in [[shift-notes]] and flag for a re-scope, don't quietly extend the ledger.
 - **Deleting "obsolete" entries** — if a feature is no longer needed, leave it and mark it `passes: true` with a note, or negotiate removal explicitly. Silent deletion breaks priority counting.
-- **Markdown or YAML instead of JSON** — measured in shift-work agent runs, JSON cuts spurious field edits ~7x vs. Markdown and premature-pass marking ~2x. The strictness does the work.
+- **Treating the format as proof**: JSON gives a parseable shape, not correctness. This fork has no reproduced measurement of a format-related completion benefit.
 
 ## Audit check
 

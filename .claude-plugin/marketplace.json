@@ -1,6 +1,6 @@
 {
   "name": "loopkit-marketplace",
-  "description": "Standalone marketplace for loopkit — 41 skills + minimal harness.",
+  "description": "Optional loopkit skill library. Local runner installation is separate.",
   "owner": {
     "name": "Archive228",
     "url": "https://github.com/Archive228"
@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "loopkit",
-      "description": "33 battle-tested skills + a minimal harness for Claude Code, Cursor, Codex, Gemini CLI.",
+      "description": "Optional coding skills and instructions, not a runtime verification gate.",
       "version": "0.2.0",
       "source": "./",
       "author": {

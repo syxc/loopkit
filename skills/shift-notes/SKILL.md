@@ -6,7 +6,9 @@ when_to_use: end of any session in a multi-session project, start of the next on
 
 # Shift Notes
 
-The hard problem in long-running agents is not doing work in one session — it's bridging the context gap between sessions. Every fresh agent starts with zero memory. If it has to reconstruct project state from the code, it burns 5-10 minutes and a chunk of context before writing a line. If it has a well-shaped handoff file, that drops to 30-60 seconds.
+Optional context only. The local runner owns `.loopkit/state.json`; fresh executable checks and exact-candidate review determine verification. Do not write runtime state from a prose handoff.
+
+The hard problem in long-running agents is not doing work in one session — it's bridging the context gap between sessions. A fresh agent may need to reconstruct project state. Keep concise handoff context, but do not claim a measured time saving without evidence.
 
 That handoff file is `claude-progress.txt` (or equivalent). Prose, not JSON. The model writes prose more naturally, and the read is cheap.
 
@@ -55,7 +57,7 @@ Enforced softly by the prompt, not by validation. Free text is the point — the
 - **Notes rewritten every session from scratch.** Lose history, lose audit trail. Append and edit in place, don't overwrite.
 - **"What's done" section grows unboundedly.** Fine up to ~40 entries. Past that, compact by feature milestone.
 - **Ambiguous "in progress" prose.** The next session will misread "the button is wired but the state doesn't refresh" as "done" if you write "button works". Be precise about what fails.
-- **Notes drift out of sync with the feature list.** Feature list is source of truth for pass/fail state; notes are the prose gloss. When they disagree, the list wins.
+- **Notes or feature-list booleans presented as proof.** Neither can bypass the runner's acceptance and bound review evidence.
 - **JSON handoff file.** Tried and abandoned — the model wrote shorter, less useful notes when forced into JSON. Prose wins for prose.
 
 ## What NOT to put in the notes

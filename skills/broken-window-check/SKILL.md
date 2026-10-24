@@ -17,7 +17,7 @@ Across shift-notes-driven sessions (see `shift-notes`), agents will sometimes ma
 3. **Compare observed behavior to the spec** — the `steps` field on the feature, or the acceptance criteria in the spec.
 4. **If it works** — proceed to normal work selection. Note the check in the shift notes ("verified feature N still green").
 5. **If it fails** —
-   - `git revert` the commit that claimed completion (do not force-push).
+   - Preserve the evidence and candidate. Request authorization before reverting any commit; do not auto-revert to obtain a clean tree.
    - Set that feature's status back to `not-done` in the feature list.
    - Note in shift notes: "reverted feature N, cause: <one line>".
    - Fix it. That is your entire session.
@@ -44,7 +44,7 @@ The check must exercise the path the user actually takes. Anything less is theat
 
 ## Cost
 
-The check is 30-90 seconds per session in a healthy project. In a project that's about to go sideways, it saves hours. The dropout in premature-completion rate is roughly 4x when the check is enforced vs. not (measured in shift-work-style agent runs).
+Record the check's elapsed time and outcome for your project. This fork has no reproduced measurement of time savings or reduced premature completion.
 
 ## Pairs with
 

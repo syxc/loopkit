@@ -16,8 +16,8 @@ Layout: `src/` (code), `tests/`, `db/migrations/`.
 ## Claude-specific
 
 - Slash commands live in `.claude/commands/`. `/spec`, `/verify`, and `/loop` are the primary entry points.
-- The `verifier` subagent (`.claude/agents/verifier.md`) is dispatched by `/verify` and can be reused as an eval grader.
-- The SessionStart hook (`.claude/hooks/session-start`) injects the `using-loopkit` skill on startup, `/clear`, and compaction — so skill routing is loaded from turn 1.
+- `/verify` runs the saved candidate through executable acceptance and a separate fresh reviewer adapter. `.claude/agents/verifier.md` is an optional read-only profile, not the runtime gate.
+- The optional SessionStart hook (`.claude/hooks/session-start`) can expose skill routing when configured by your client. The runner does not require it or enable external services.
 - Cross-agent rules live in the imported `AGENTS.md` at repo root. Do not duplicate them here.
 
 <!-- Keep under 300 lines. Prune weekly. Every paragraph is a tax on every turn. -->

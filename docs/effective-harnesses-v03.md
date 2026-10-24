@@ -1,5 +1,7 @@
 # Effective Harnesses for Long-Running Agents
 
+> Historical, unverified upstream source material. All internal-eval numbers, private references, dates, model claims and attributed results below are unreproduced in this fork. They are not evidence of loopkit performance or current runtime behavior. The sibling `effective-harnesses-v03.pdf` contains the same unverified historical claims and is not updated by this fork. Use the root README and `docs/portability.md` for the implemented contract.
+
 ## 1. The long-running agent problem
 
 The Claude Agent SDK ships with reasonable context management — compaction, tool-result truncation, conversation summarisation. In principle this is enough to let a single agent run indefinitely. In practice it is not. Even with Opus 4.5 (and now Opus 4.6) running in a loop on the Agent SDK, a high-level prompt such as _"build a clone of claude.ai"_ does not survive contact with a multi-hour run.

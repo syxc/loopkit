@@ -6,7 +6,7 @@ allowed-tools: Read, Write, Edit, Bash(git:*), Bash(ls:*), Bash(cat:*)
 
 # /build (Finn Loop) — Plan → Act → Verify, gated on human ACK
 
-This is a thin wrapper around the loopkit Plan / Act / Verify loop. The only thing it adds is a **hard gate at step 0**: it refuses to run unless the human has ACKed the spec by creating `SPEC-APPROVED.md`.
+This legacy optional prompt asks the agent to stop without `SPEC-APPROVED.md`; it is not an authenticated approval system. Use the base runner with an approved `loopkit.task.json` for executable gates. Do not treat this prompt as a replacement for the runner.
 
 ## Step 0 — the gate
 
@@ -38,7 +38,7 @@ Follow the standard loopkit Plan step from `AGENTS.md`:
 
 ## Step 4 — Hand off to /review
 
-- Commit via `scripts/committer "<msg>" <files>` (base loopkit convention — refuses `.` and empty messages).
+- Leave changes uncommitted. Only commit after exact-candidate verification and explicit user authorization; do not assume the preset grants it.
 - Update `IMPLEMENTATION_PLAN.md` with what was done and what is next.
 - Do NOT delete `SPEC-APPROVED.md` yet. `/review` needs it.
 - Print:

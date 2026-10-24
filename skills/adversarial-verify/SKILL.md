@@ -13,8 +13,9 @@ Do not be polite. Do not propose fixes. Do not run the code. Just hunt.
 
 ## Read first
 
-- The goal spec (PROMPT.md / the task). What does "done" actually require?
-- The diff. Every changed line.
+- The approved `loopkit.task.json` and supporting scope text. What does acceptance require?
+- The supplied candidate ID and full pinned-base-to-candidate diff, not only `git diff HEAD`. Read connected source and every changed line.
+- Executable check evidence. Static review supplements these checks; it cannot replace them.
 
 ## The 11 shortcuts agents take to fake "done" — check each
 
@@ -33,7 +34,7 @@ Do not be polite. Do not propose fixes. Do not run the code. Just hunt.
 ## Output (JSON, no prose)
 
 ```json
-{"passes": false, "failures": [{"line": 42, "shortcut": "swallowed errors", "why": "..."}]}
+{"task_id":"copy-task-id","candidate_id":"copy-candidate-id","passes":false,"failures":["file:42: swallowed error hides acceptance failure"]}
 ```
 
-If it genuinely passes, say so in one line. Most of the time, it doesn't.
+Use exactly these fields and boolean types. A pass requires `failures:[]`; a rejection requires at least one nonempty failure. Missing candidate identity is not a pass. Return only the object. The local runner validates it and rechecks the candidate; CLI exit success alone has no completion authority. Run the reviewer in a fresh process/context without executor history.

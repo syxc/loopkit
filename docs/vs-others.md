@@ -1,5 +1,7 @@
 # loopkit vs other skill packs
 
+> Historical, unverified upstream comparison. Product descriptions, counts, dates and exclusivity claims below have not been checked for this fork and must not be used as current marketing evidence. The runner and installation behavior are documented in the root README and `docs/portability.md`. A skills-only installation does not install the runner.
+
 Written in July 2026 after mining the top three loadout repos. This document is honest — where another pack beats loopkit, it says so. Use it to choose the tool for your loop, not to score points.
 
 ## TL;DR

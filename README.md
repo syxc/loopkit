@@ -1,324 +1,101 @@
-<div align="center">
+# loopkit: acceptance-gated local agent loop
 
-```
-   ▄█        ▄██████▄   ▄██████▄     ▄███████▄  ▄█   ▄█▄  ▄█      ███
-  ███       ███    ███ ███    ███   ███    ███ ███ ▄███▀ ███  ▀█████████▄
-  ███       ███    ███ ███    ███   ███    ███ ███▐██▀   ███▌    ▀███▀▀██
-  ███       ███    ███ ███    ███   ███    ███ ▄█████▀   ███▌     ███   ▀
-  ███       ███    ███ ███    ███ ▀█████████▀ ▀▀█████▄   ███▌     ███
-  ███       ███    ███ ███    ███   ███         ███▐██▄  ███      ███
-  ███▌    ▄ ███    ███ ███    ███   ███         ███ ▀███▄███      ███
-  █████▄▄██  ▀██████▀   ▀██████▀   ▄████▀       ███   ▀█▀ █▀     ▄████▀
-```
+This fork keeps the optional skill library and replaces the open-ended shell loop with a small Node standard-library runner. One approved task, executable acceptance, disk evidence, then a separate fresh static review. No automatic commits.
 
-**A drop-in `.claude/` harness + 49 battle-tested skills for coding agents.**
+## Offline quickstart
 
-Plan → Act → Verify, enforced by files on disk. Ships the floor, keeps out of your way.
+Requirements: Git, Node >=18, and a POSIX shell on Linux or macOS. This example uses no model API, credentials or quota. Run these commands from a local clone of this fork:
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![Skills](https://img.shields.io/badge/skills-49-black.svg)](#the-library)
-[![Tracks](https://img.shields.io/badge/tracks-10-black.svg)](#the-library)
-[![Compatible](https://img.shields.io/badge/agents-Claude%20Code%20%C2%B7%20Cursor%20%C2%B7%20Codex%20%C2%B7%20Gemini-black.svg)](#compatibility)
-[![skills.sh](https://img.shields.io/badge/skills.sh-Archive228%2Floopkit-green.svg)](https://www.skills.sh/)
-
-</div>
-
----
-
-## 30-second quickstart
-
-```bash
-# 1. drop the harness into your project (safe: skips existing files)
-curl -fsSL https://raw.githubusercontent.com/Archive228/loopkit/main/install.sh | bash
-
-# 2. open Claude Code / Cursor / Codex in the same directory
-claude
-
-# 3. write a one-line spec, then let the loop drive
-echo "STATUS: not-started" > IMPLEMENTATION_PLAN.md
+```sh
+SOURCE=$PWD
+mkdir ../loopkit-demo
+cd ../loopkit-demo
+node "$SOURCE/bin/loopkit.js" init
+cp examples/task.demo.json loopkit.task.json
+git init
+git add .
+git -c user.name=Demo -c user.email=demo@example.invalid commit -m "chore: approve offline demo"
 ./run.sh
 ```
 
-That's it. Skills load only when a task triggers them. The verifier subagent closes the loop.
+Expected: `VERIFIED <candidate-id>` and an uncommitted `greeting.txt` containing `hello` and a newline. The demo reviewer is a fixed protocol fixture, not evidence of model review quality. Installer tests run this cold path with both entry points.
 
-> Existing files are kept by default. Pass `FORCE=1` to overwrite, or `BACKUP=1` to snapshot your current `.claude/` to `.claude.bak-<timestamp>/` before writing.
+For real work, copy `template/loopkit.task.json` to `loopkit.task.json`. Replace its failing placeholder with the project's deterministic acceptance checks and configure two CLI adapters. Approve and commit the contract and checks before starting. Use a task small enough to verify as one slice. See [the runtime contract and adapter protocol](docs/portability.md).
 
-## Cherry-pick a single skill
+## What the runner checks
 
-Prefer one skill over the whole floor?
+1. Refuse an unsafe dirty first start. Pin the starting Git revision and exact task-file hash.
+2. Invoke the executor with the task and prior failure feedback. Never request a commit.
+3. Snapshot tracked and non-ignored untracked candidate files with a temporary Git index. Preserve the real index. Save the complete binary Git diff from the pinned base, including any premature commit.
+4. Reject a moved HEAD or an empty candidate. Run each configured acceptance command. Check that the contract and candidate did not change.
+5. Start a separate reviewer process with the contract, exact candidate ID, diff path and check results, without the executor transcript or session.
+6. Require exit success AND a schema-valid JSON pass bound to this candidate. Recheck the candidate before saving `verified`.
 
-```bash
-npx -p claude-loopkit loopkit-add adversarial-verify
+Failed acceptance or a negative review can use the next bounded repair iteration. Invalid JSON, blocked work, timeouts, mutation, moved HEAD and exhausted limits stop with nonzero exit and `BLOCKED.md`. The runner does not treat `STATUS: done`, commit messages or feature-list booleans as authority.
+
+## Durable evidence and resume
+
+`.loopkit/state.json` records the base, task hash, original start time, counters, phase, candidate and rejected candidate IDs. `.loopkit/attempt-*/` holds candidate diffs, command output, exit/timeout metadata, checks and review verdicts. `events.jsonl` records phase commands and elapsed time. Review these files before resuming.
+
+```sh
+# Resolve the cause in BLOCKED.md; explicitly remove the marker yourself.
+./run.sh --resume
+# Re-run checks and fresh review only; never repair in this mode.
+./run.sh --resume --verify-only
 ```
 
-Installs only that skill into `./.claude/skills/`. Pass `--force` to overwrite an existing copy. Browse the catalog at [skills/](./skills).
+The original deadline and executor iteration count do not reset. Saved `verified` status always requires new executable checks and fresh review on resume; changed bytes cannot reuse it. A dead owner lock requires manual inspection. There is no automatic stash, reset, cleanup, commit or push. Keep `.loopkit/` and `BLOCKED.md` untracked; they are reserved runtime paths and excluded from candidate snapshots.
 
----
+After verification, the user decides whether to commit. For another task, first preserve/finish the candidate, archive the old `.loopkit` evidence yourself, and approve a new contract on a clean tree. This runner does not schedule a backlog.
 
-## What loopkit is (and isn't)
+## Installation
 
-Straight from my own `.claude/` directory. This is the loadout I actually reach for — not a methodology, not a lifecycle, not a framework.
+The local/npm entry is `node /path/to/loopkit/bin/loopkit.js init`. The download entry calls the same installer:
 
-**loopkit is:**
-- A working harness: settings, hooks, verifier subagent, loop runner. Files on disk, no runtime.
-- 49 small skills that load only when relevant, so the agent specializes instead of guessing.
-- Cross-agent. Every skill is a plain markdown doc with a YAML header — nothing Claude-specific inside the skill body.
-
-**loopkit isn't:**
-- A new methodology to learn. No BMAD, no Prime Radiant, no 6-phase lifecycle. If a skill doesn't help the loop advance, it isn't here.
-- A wrapper CLI. No daemon, no server, no runtime state. `run.sh` is 8 lines.
-- A vendor lock-in. Fork it, gut it, keep the three skills you like. MIT.
-
----
-
-## The loop
-
-Every skill fires inside this shape. The harness enforces it.
-
-```
-  PLAN ──▶  ACT  ──▶  VERIFY
-    ▲                    │
-    └────── revise ──────┘
+```sh
+# Inspect install.sh first. Pin LOOPKIT_REF to a reviewed tag or commit.
+curl -fsSL https://raw.githubusercontent.com/syxc/loopkit/main/install.sh -o /tmp/loopkit-install.sh
+LOOPKIT_REF=main sh /tmp/loopkit-install.sh
 ```
 
-- **PLAN** — `spec-first`, `context-budget`, `tool-restraint`, `planner-spec-expand`, `sprint-contract` load here.
-- **ACT** — domain skills load here (debug, security, testing, refactor, docs, data, git-ops).
-- **VERIFY** — `adversarial-verify` + `evaluator-calibration` + the verifier subagent close the loop before anything ships.
+The download command applies after these changes are published to the selected ref. The local-clone quickstart works without publication. Download installation requires Node, curl and tar. It supports `DEST`, `LOOPKIT_REPO`, `LOOPKIT_REF`, `FORCE=1` and `BACKUP=1`. Existing files are kept by default; inspect kept files for old instructions before use. `--force` is an explicit overwrite, not a migration or merge. `--dry-run` is available on the Node entry. Symlink install targets are refused.
 
-Full theory: **[Loop and Harness engineering: 7 files, 5 steps](./docs/effective-harnesses-v03.md)**.
+Both entries install `AGENTS.md`, `.claude/`, optional skills, `MEMORY.md`, `run.sh`, the required runtime, task template, offline examples and referenced checklists. MCP wiring remains optional in the source `.mcp.json`; it is not installed or enabled by default. A skills-only or Claude plugin install does not install the runner.
 
----
+To copy one optional skill from this clone:
 
-## File-by-file: what you get
-
-```
-your-project/
-├── .claude/
-│   ├── CLAUDE.md          # 60-line standing context (edit for your stack)
-│   ├── settings.json      # permission allowlist + format-on-write hook
-│   ├── agents/
-│   │   └── verifier.md    # adversarial verifier subagent (Haiku, JSON-out)
-│   ├── hooks/             # session-start bootstrap
-│   └── skills/            # 49 skills, symlinked or copied
-├── .mcp.json              # MCP server wiring (github, context7)
-├── MEMORY.md              # cross-session memory index (keep terse)
-└── run.sh                 # Plan → Act → Verify loop runner
+```sh
+/path/to/loopkit/bin/loopkit-add adversarial-verify
 ```
 
-Every file below is opinionated on purpose. Change what doesn't fit; the loop still works.
+## Commands and optional skills
 
-### `.claude/CLAUDE.md` — standing context
-60 lines, no more. The tax on every turn. Stack, layout, commands, conventions, the three things the agent must never do. Prune weekly.
+- `/spec`: draft one task contract and supporting goal text; stop for approval.
+- `/loop`: run the machine gate, or resume it explicitly.
+- `/verify`: re-run executable acceptance and fresh static review on the saved candidate. A slash command's text alone cannot certify completion.
+- `/polish` and `/next`: optional interactive helpers; no runner authority.
 
-### `.claude/settings.json` — permissions + hooks
-Allowlist for read-only Bash and Read; deny-list for `rm -rf` and force-push. `PostToolUse` hook runs Prettier on every Edit/Write so the diff stays reviewable.
+Browse [skills/](skills/) or the [routing table](skills/using-loopkit/SKILL.md). Skills are plain Markdown instructions, not enforced checks. Keep only those useful to your project. Claude-specific commands and hooks do not imply compatibility with every other agent; other CLIs need an adapter for the documented protocol.
 
-### `.claude/agents/verifier.md` — the adversarial subagent
-Runs on Haiku. Reads the diff assuming it's broken. Checks the 11 "fake done" shortcuts (see `skills/adversarial-verify`). Returns JSON. Does not propose fixes, does not run code, does not be polite. This is the load-bearing piece.
+## Periodic ablation
 
-### `.claude/hooks/` — session-start bootstrap
-Fires when the agent opens the project. Reminds it of the loop shape and points at `CLAUDE.md`. Zero runtime cost.
+After a model/tool version change, and monthly during active use, follow [harness-stripping](skills/harness-stripping/SKILL.md). Pin a fixed task set and environment, compare paired baseline runs with exactly one optional component removed, run unchanged acceptance, and record quality, cost and wall time. The skill contains a reproducible protocol. Safety gates are not ablation candidates. There are no measured gains claimed by this fork.
 
-### `.claude/skills/` — the 49-skill library
-Each skill: YAML frontmatter with `name` + `description`, a short body, no runtime dependencies. Loads only when its trigger fires. See the full list below.
+## Checks
 
-### `.mcp.json` — MCP wiring
-GitHub + Context7 by default. Add your own; the harness doesn't care.
-
-### `MEMORY.md` — cross-session index
-Preferences, decisions, feedback you keep re-applying. Prune every session or it becomes rot.
-
-### `run.sh` — the loop runner
-8 lines. Reads `PROMPT.md` + `IMPLEMENTATION_PLAN.md`, does one step, verifies, loops until `STATUS: done`. Fresh context each turn; state lives on disk.
-
----
-
-## The library
-
-**49 skills across 10 tracks.** Each one: name → what it does → when it fires.
-
-### agent/llm — how the agent behaves
-- **context-budget** — trim the working set → *before large reads or long sessions*
-- **spec-first** — write the contract before code → *any new feature or endpoint*
-- **tool-restraint** — pick the smallest tool that fits → *avoids Bash-for-everything drift*
-- **subagent-fanout** — parallelize independent probes → *research/audit tasks*
-
-### loop & harness — long-running, multi-session, multi-agent discipline
-- **planner-spec-expand** — 1–4 sentence brief → full ambitious spec with design language and ordered feature list → *starting a fresh project or major feature*
-- **sprint-contract** — negotiate "done" as script-decidable predicates before code → *entering an implementation sprint with an evaluator in the loop*
-- **feature-list-json** — enumerate every feature as strict JSON, `passes:false`, editable-passes-only → *multi-session builds*
-- **init-script-contract** — idempotent `init.sh` + `test.sh`/`stop.sh`/`reset.sh` siblings, under 120s → *setting up a repo for multi-session agent work*
-- **progress-reading-protocol** — fixed 6-step session-open ritual (pwd → progress → git log → feature-count → init → smoke-test) → *any session bootstrapping into an existing project*
-- **self-eval-bias** — interrupt confidently-praise-my-own-work drift → *when an agent is about to declare success on its own output*
-- **evaluator-calibration** — few-shot the reviewer persona with rubric anchors to keep skepticism from drifting lenient → *before a long autonomous run with a reviewer agent*
-- **harness-stripping** — remove one harness component at a time and measure impact, on every model release → *when a new model lands, before piling on more scaffolding*
-
-### debug
-- **systematic-debugging** — hypothesis → test → narrow → *any bug you can't one-shot*
-- **read-the-trace** — extract the actual failure from noise → *stack traces, CI logs*
-- **bisect-regression** — git-bisect discipline → *"it worked yesterday"*
-
-### security
-- **owasp-review** — top-10 pass on a diff → *before merging user-facing changes*
-- **authz-check** — verify every route enforces its policy → *auth surface changes*
-- **input-validation** — validate at the edge → *any handler taking external data*
-- **secret-scan** — catch keys before commit → *pre-push, PR review*
-- **dependency-audit** — CVE + license triage → *lockfile changes*
-
-### frontend
-- **design-system** — reuse tokens, don't invent them → *any UI change*
-- **a11y-pass** — semantics + keyboard + contrast → *before shipping a screen*
-- **loading-empty-error-states** — all four states, not just happy path → *any async view*
-
-### testing
-- **write-failing-test-first** — red before green → *behavior changes, bug fixes*
-- **flaky-hunter** — reproduce, isolate, quarantine → *intermittent CI reds*
-- **coverage-gaps** — find behavior with no test → *before declaring "done"*
-- **contract-test** — pin the API shape → *service boundaries*
-
-### refactor
-- **kill-dead-code** — prove unreachable, then delete → *cleanup passes*
-- **simplify** — collapse indirection you don't need → *code review, "too clever"*
-- **reduce-nesting** — early returns, guard clauses → *reading fatigue*
-
-### docs
-- **changelog-from-diff** — human-readable release notes → *tagging a version*
-- **decision-record** — ADR for the "why" → *architectural choices*
-- **readme-audit** — check onboarding path from cold → *before public share*
-
-### data
-- **sql-review** — indexes, N+1, plan → *any non-trivial query*
-- **migration-writer** — reversible, zero-downtime → *schema changes*
-- **schema-diff** — compare shapes, catch drift → *env sync*
-
-### git/ops
-- **clean-commits** — atomic, message-first → *before PR*
-- **pr-from-diff** — summary the reviewer will actually read → *opening a PR*
-- **rebase-safely** — no lost commits → *history cleanup*
-- **revert-surgical** — undo only the offending change → *bad merges*
-
-### review
-- **adversarial-verify** — the 11 shortcuts agents take to fake "done" → *before flipping any task to complete*
-- **verification-before-completion** — run the exact command, read the output, then claim → *before any "done" claim*
-
----
-
-## Reference checklists (loaded on demand)
-
-Skills stay short. When one needs a longer reference, it points here:
-
-- [Definition of Done](./docs/checklists/definition-of-done.md) — what "shipped" actually means
-- [Red Flags](./docs/checklists/red-flags.md) — 15 patterns the verifier looks for
-- [Rationalizations](./docs/checklists/rationalizations.md) — excuses agents give and their rebuttals
-
-## Slash commands
-
-Three commands ship in `.claude/commands/`. Each loads a small set of skills and drives a fixed protocol — no hidden state.
-
-- **Spec first: `/spec`** — write `PROMPT.md` and `IMPLEMENTATION_PLAN.md` before the agent touches code.
-- **Adversarial verify: `/verify`** — assume the diff is broken; run the 11-shortcut checklist and dispatch the verifier subagent.
-- **One-shot polish pass: `/polish`** — batch quality pass over the current diff (simplify → reduce-nesting → kill-dead-code → a11y-pass → loading-empty-error-states → readme-audit).
-
----
-
-## Install
-
-Pick one. All three drop the same files into your current project.
-
-```bash
-# via curl (no Node required, recommended)
-curl -fsSL https://raw.githubusercontent.com/Archive228/loopkit/main/install.sh | bash
-
-# via skills.sh (works with any agent that reads SKILL.md)
-npx skills add Archive228/loopkit
-
-# via git (if you want to fork first)
-git clone https://github.com/Archive228/loopkit
-cp -r loopkit/.claude your-project/
+```sh
+npm test
+npm run check
 ```
 
-**Options for the curl installer:**
+The tests use isolated temporary Git projects and mock CLIs. No model calls occur. CI keeps skill validation, shell syntax and sync checks, and runs runtime/installer tests on Linux and macOS. Deterministic checks and static review provide different evidence; neither guarantees behavior outside their coverage.
 
-| Env var | Effect |
-|---|---|
-| `FORCE=1` | Overwrite existing files instead of skipping |
-| `BACKUP=1` | Snapshot existing `.claude/` to `.claude.bak-<timestamp>/` before writing |
-| `DEST=/path` | Install into a specific directory instead of `$PWD` |
-| `LOOPKIT_REF=<branch>` | Install from a specific branch/tag (default `main`) |
+## Trust boundary
 
-The installer prints every write, verifies the `claude` CLI is on your PATH afterward, and exits non-zero if anything critical failed.
+One local owner and cooperating adapters only. This is not an OS sandbox, a hostile-agent security boundary, a budget/accounting service or a production scheduler. Adapters and checks run with the operator's permissions and inherited environment. Configure fresh sessions and read-only reviewer tools yourself. Do not put secrets in argv, task files or output. Runtime logs can contain project code and must remain local unless sharing is authorized. Git-ignored files, external dependencies, running services and tool/model internals are not part of the candidate hash. See [portability](docs/portability.md) for details and failure recovery.
 
----
+## Historical material
 
-## Portability
+The upstream [article](docs/effective-harnesses-v03.md), its sibling `docs/effective-harnesses-v03.pdf`, and [comparison](docs/vs-others.md) are historical, unverified source material. Their internal-eval numbers, dates, product comparisons and performance claims have not been reproduced here. They are not evidence for this runner. Optional skill guidance is advice, not a measured benefit.
 
-Not tied to Claude. See [docs/portability.md](docs/portability.md).
-
----
-
-## Compatibility
-
-Works with anything that reads `SKILL.md`:
-
-**Claude Code · Cursor · Codex · Gemini CLI · Windsurf · GitHub Copilot CLI**
-
-Every skill file is a plain markdown doc with a YAML header. Nothing agent-specific inside the body. If your agent reads `.claude/skills/`, `~/.claude/skills/`, or a `SKILL.md` file, loopkit fits.
-
-The bundled harness (`settings.json`, hooks, verifier subagent) is Claude-Code-shaped. Cursor/Codex/Gemini users can ignore the harness and use just the skills — or port the three harness files (they're small).
-
----
-
-## vs other skill packs
-
-|  | loopkit | [obra/superpowers](https://github.com/obra/superpowers) | [mattpocock/skills](https://github.com/mattpocock/skills) | [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) |
-|---|---|---|---|---|
-| Ships a harness (settings, verifier, loop runner) | **yes** | no | no | no |
-| Skills load only on trigger (YAML frontmatter) | yes | yes | yes | yes |
-| Methodology commitment required | **none** | Prime Radiant | GSD-adjacent | 6-phase lifecycle |
-| Skill count | 49 | ~40 | ~19 | ~24 |
-| Compatible with non-Claude agents | yes | Claude-first | multi | multi |
-| Install size | tiny | medium | medium | medium |
-
-Full breakdown: [docs/vs-others.md](./docs/vs-others.md).
-
----
-
-## Positioning
-
-loopkit is deliberately not a methodology. Approaches like BMAD, Spec-Kit, and full lifecycle skill packs try to help by owning the process — but they take away the control that makes agents useful in your codebase. loopkit gives you the mini-skills and a floor to stand on. Everything else is yours to shape.
-
-The two failure modes long-running agents actually hit (doing too much at once; premature victory) are structural, not skill-shaped. `run.sh` + the verifier subagent are the structural answer. The skills just make each turn cheaper. The new **loop & harness** track (planner-spec-expand, sprint-contract, evaluator-calibration, harness-stripping, and friends) operationalizes the multi-session discipline described in the companion article.
-
----
-
-## Contributing
-
-PRs welcome. The bar:
-
-1. **Skills stay small.** One page, one trigger, one purpose. If it needs 200 lines it belongs in `docs/checklists/`.
-2. **Every skill has YAML frontmatter** — `name`, `description`. Nothing else is required; nothing else should be added without a reason.
-3. **No new methodologies.** loopkit doesn't ship lifecycles, phases, or ceremonies. Add a skill, not a framework.
-4. **Match the existing file when editing.** Read it before you write.
-
-Adding a skill:
-
-```bash
-# 1. copy the template (once available in template/SKILL.md)
-cp template/SKILL.md skills/my-new-skill/SKILL.md
-
-# 2. write it
-$EDITOR skills/my-new-skill/SKILL.md
-
-# 3. validate the frontmatter shape
-./scripts/validate-skills
-
-# 4. open a PR
-```
-
-Full contribution guide: [CONTRIBUTING.md](./CONTRIBUTING.md).
-
----
-
-## License
-
-MIT. Built to be forked. Follow the build: [@archive on X](https://x.com/archive) · article: *Loop and Harness engineering*.
+MIT. Fork of Archive228/loopkit; original attribution and license retained.

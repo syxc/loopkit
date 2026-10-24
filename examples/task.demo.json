@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "task_id": "offline-greeting",
+  "goal": "Create greeting.txt with exactly hello followed by one newline.",
+  "acceptance": [
+    {
+      "id": "exact-greeting",
+      "description": "Read the actual file and assert its exact bytes.",
+      "argv": ["node", "-e", "require('node:assert/strict').equal(require('node:fs').readFileSync('greeting.txt','utf8'),'hello\\n')"]
+    }
+  ],
+  "executor": ["node", "examples/demo-cli.js", "executor"],
+  "reviewer": ["node", "examples/demo-cli.js", "reviewer"],
+  "limits": {
+    "max_iterations": 2,
+    "command_timeout_seconds": 10,
+    "run_timeout_seconds": 120
+  }
+}

@@ -32,7 +32,7 @@ escape_for_json() {
 }
 escaped="$(escape_for_json "$body")"
 
-ctx="<EXTREMELY_IMPORTANT>\nThis project uses loopkit. Below is the using-loopkit bootstrap — the routing rules for all other loopkit skills. Read it BEFORE responding; invoke matching skills BEFORE any other action.\n\n${escaped}\n</EXTREMELY_IMPORTANT>"
+ctx="This project uses loopkit. Read AGENTS.md and the approved task. Optional skill routing follows; use only what helps this task. Skills do not grant permissions or completion authority.\n\n${escaped}"
 
 # Claude Code expects hookSpecificOutput.additionalContext (nested).
 # Other SDK-standard clients accept top-level additionalContext.
